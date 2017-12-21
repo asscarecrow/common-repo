@@ -1,6 +1,32 @@
 import * as bool from './boolean';
 /*
- 一个使用了promise 特性的ajax工具
+ 一个使用了promise 特性的轻量 ajax工具
+使用例子
+let $get = new Component({
+  type: 'POST', //请求方式
+  fetch: true, // 是否启用fetchAPI
+  dataProcess: null, // 处理数据，默认处理是encode
+  dealRes: null, // 必须传入一个dealRes处理函数
+  beforeSend: null, //请求前
+  success: null, //成功
+  fail: null,// 失败
+  complete: null // 处理完成，会在success和fail后面调用
+})
+
+ dealRes 是这样子的一个处理返回结果的接口
+  @prototype then: 暴露$ajax 返回的then接口
+  @prototype catch: 捕获$ajax 返回的catch接口
+  在then方法里可以处理与后台的约定结果，返回success、fail、complete 等不同的回调
+
+function dealRes(options) {
+this.success = options.success || function () { };
+  this.fail = options.fail || function (res) { };
+  this.complete = options.complete || function () { };
+  this.error = options.error || function (res) { };
+}
+dealRes.prototype.then = (res,resolve,reject) => { };
+dealRes.prototype.catch = (res,reject) => { };
+
 
 */
 export default class Component {
