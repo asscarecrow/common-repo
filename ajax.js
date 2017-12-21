@@ -12,7 +12,12 @@ export default class Component {
         })
       }
     function ajax(options) {
-      let opt = Object.assign({},defaults,options);
+      var opt;
+      if(typeof options==='string') {
+        opt = Object.assign({},defaults,{ url : options })
+      }else {
+        opt = Object.assign({}, defaults, options);
+      }
       const _this = this;
       let timestamp = new Date().getTime();
       let dealResInstance = new opt.dealRes(opt);
@@ -82,12 +87,14 @@ export default class Component {
           };
         }
       });
-      promise.catch(function(err) {
+    /*   promise.catch(function(err) {
+        console.info('catch 1')
+        //dealResInstance.catch(err);
         if(!!err) {
           throw new Error(err);
         }
-        throw new Error('网络状态不通，不 OK');
-      });
+        //throw new Error('网络状态不通，不 OK');
+      }); */
       return promise;
     }
     return ajax;
@@ -95,11 +102,18 @@ export default class Component {
 }
 
 function dataProcess(data, newObj = [], newName) {
+    function parseName(name,i) {
+      if(!!name) return `${name}[${i}]`;
+      return i;
+    }
   Object.keys(data).forEach(key => {
     let currentData = data[key];
+    let currentName = parseName(newName,key);
     if (bool.isArray(currentData)) {
-      currentData.forEach(key2, index => {
-        let name = key + `${index}`;
+      currentData.forEach((key2, index) => {
+        //let name = key + `[${index}]`;
+
+        let name = parseName(currentName,index);
         if (bool.isObject(key2)) {
           return dataProcess(key2,newObj,name)
         }else {
@@ -107,9 +121,9 @@ function dataProcess(data, newObj = [], newName) {
         }
       });
     } else if (bool.isObject(currentData)) {
-      return dataProcess(currentData, newObj, key)
+      return dataProcess(currentData, newObj, currentName)
     } else {
-      newObj.push(encode(key, currentData));
+      newObj.push(encode(currentName, currentData));
     }
   })
   return newObj.join('&');
