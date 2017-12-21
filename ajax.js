@@ -1,7 +1,11 @@
 import * as bool from './boolean';
+/*
+ 一个使用了promise 特性的ajax工具
+
+*/
 export default class Component {
   constructor(args) {
-    let defaults = { url: '', data: {}, type: 'POST', fetch: true, dataProcess: null, success: () => { }, fail: () => { }, beforeSend: () => { }, complete: () => { } };
+    let defaults = { url: '', data: {}, type: 'POST', fetch: true, dataProcess: null, dealRes:function() {this.then=()=>{};this.catch=()=>{};}, success: null, fail: null, error: null, beforeSend: null, complete: null};
       if(bool.isObject(args)) {
         Object.keys(args).forEach(key => {
           defaults[key] = args[key];
@@ -11,6 +15,7 @@ export default class Component {
       let opt = Object.assign({},defaults,options);
       const _this = this;
       let timestamp = new Date().getTime();
+      let dealResInstance = new opt.dealRes(opt);
       opt.type = String.prototype.toUpperCase.call(opt.type);
       const promise = new Promise((resolve,reject)=>{
         opt.beforeSend();
@@ -43,19 +48,13 @@ export default class Component {
             if (res.ok) {
               return res.json();
             }
-            opt.fail();
-            reject();
+            dealResInstance.catch(res, reject);
           })
           .then(resJson => {
-
-            opt.success(resJson);
-            opt.complete(resJson);
-            resolve();
+            dealResInstance.then(resJson,resolve,reject);
           })
           .catch(e => {
-            opt.fail();
-            opt.complete();
-            reject(e);
+            dealResInstance.catch(e,reject);
           })
         }else {
           let requestObj;
@@ -72,16 +71,12 @@ export default class Component {
               if (requestObj.status === 200) {
                 try {
                   let resJson = JSON.parse(requestObj.response);
-                  opt.success(resJson);
-                  opt.complete(resJson);
-                  resolve(resJson);
+                  dealResInstance.then(resJson, reslove, reject);
                 } catch (e) { // 捕获后端异常返回
-                  opt.fail(e);
-                  reject(e);
+                  dealResInstance.catch(e, reject);
                 }
               } else {
-                opt.fail();
-                reject();
+                dealResInstance.catch(null, reject);
               }
             }
           };
@@ -123,3 +118,4 @@ function dataProcess(data, newObj = [], newName) {
 function encode (key, val) {
   return encodeURIComponent(key) + '=' + encodeURIComponent(val);
 }
+
