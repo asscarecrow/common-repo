@@ -5,7 +5,7 @@ import * as bool from './boolean';
 let $get = new Component({
   type: 'POST', //请求方式
   fetch: true, // 是否启用fetchAPI
-  dataProcess: null, // 处理数据，默认处理是encode
+  dataProcess: null, // 处理数据，默认处理是encode，无须传入具有默认值
   dealRes: null, // 必须传入一个dealRes处理函数
   beforeSend: null, //请求前
   success: null, //成功
@@ -31,29 +31,31 @@ dealRes.prototype.catch = (res,reject) => { };
 */
 export default class Component {
   constructor(args) {
-    let defaults = { url: '', data: {}, type: 'POST', fetch: true, dataProcess: null, dealRes:function() {this.then=()=>{};this.catch=()=>{};}, success: null, fail: null, error: null, beforeSend: null, complete: null};
-      if(bool.isObject(args)) {
-        Object.keys(args).forEach(key => {
-          defaults[key] = args[key];
-        })
-      }
-    function ajax(options) {
+    let defaults = { url: '', data: {}, type: 'POST', fetch: true, dataProcess: null, dealRes: function () { this.then = () => { }; this.catch = () => { }; }, success: null, fail: null, error: null, beforeSend: null, complete: null };
+    if (bool.isObject(args)) {
+      Object.keys(args).forEach(key => {
+        defaults[key] = args[key];
+      });
+    };
+    function ajax() {
       var opt;
-      if(typeof options==='string') {
-        opt = Object.assign({},defaults,{ url : options })
-      }else {
-        opt = Object.assign({}, defaults, options);
+      if (typeof arguments[0] === 'string') {
+        opt = Object.assign({}, defaults, { url: arguments[0] }, arguments[1]);
+      } else {
+        opt = Object.assign({}, defaults, arguments[0]);
       }
-      const _this = this;
       let timestamp = new Date().getTime();
-      let dealResInstance = new opt.dealRes(opt);
+      let DealRes = opt.dealRes;
+      let dealResInstance = new DealRes(opt);
       opt.type = String.prototype.toUpperCase.call(opt.type);
-      const promise = new Promise((resolve,reject)=>{
-        opt.beforeSend();
-        let url =opt.url + `?timestamp=${timestamp}`;
-        if(bool.isObject(opt.dataProcess)) {
+      const promise = new Promise((resolve, reject) => {
+        if (bool.isFunction(opt.beforeSend)) {
+          opt.beforeSend();
+        }
+        let url = opt.url.indexOf('?') !== -1 ? opt.url += `&timestamp=${timestamp}` : opt.url += `?timestamp=${timestamp}`;
+        if (bool.isFunction(opt.dataProcess)) {
           opt.data = opt.dataProcess(opt.data);
-        }else {
+        } else {
           opt.data = dataProcess(opt.data);
         }
         let requestConfig = {
@@ -66,28 +68,27 @@ export default class Component {
           mode: 'cors',
           cache: 'force-cache'
         };
-        if(opt.type==='GET') {
+        if (opt.type === 'GET') {
           url = opt.data !== '' ? url + `&${opt.data}` : url;
-        }else {
+        } else {
           Object.defineProperty(requestConfig, 'body', {
             value: opt.data
           });
         }
-        if(window.fetch && opt.fetch) {
+        if (window.fetch && opt.fetch) {
           fetch(url, requestConfig)
-          .then((res) => {
-            if (res.ok) {
-              return res.json();
-            }
-            dealResInstance.catch(res, reject);
-          })
-          .then(resJson => {
-            dealResInstance.then(resJson,resolve,reject);
-          })
-          .catch(e => {
-            dealResInstance.catch(e,reject);
-          })
-        }else {
+            .then((res) => {
+              if (res.ok) {
+                return res.json();
+              }
+            })
+            .then(resJson => {
+              dealResInstance.then(resJson, resolve, reject);
+            })
+            .catch(e => {
+              dealResInstance.catch(e, reject);
+            });
+        } else {
           let requestObj;
           if (window.XMLHttpRequest) {
             requestObj = new XMLHttpRequest();// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -102,25 +103,26 @@ export default class Component {
               if (requestObj.status === 200) {
                 try {
                   let resJson = JSON.parse(requestObj.response);
-                  dealResInstance.then(resJson, reslove, reject);
+                  dealResInstance.then(resJson, resolve, reject);
                 } catch (e) { // 捕获后端异常返回
                   dealResInstance.catch(e, reject);
                 }
               } else {
-                dealResInstance.catch(null, reject);
+                dealResInstance.catch(requestObj, reject);
               }
             }
           };
         }
       });
-    /*   promise.catch(function(err) {
-        console.info('catch 1')
-        //dealResInstance.catch(err);
-        if(!!err) {
-          throw new Error(err);
+      promise.catch(function (err) {
+
+        if (bool.isObject(err)) {
+          // console.error('global:' + JSON.stringify(err));
+          return false;
         }
-        //throw new Error('网络状态不通，不 OK');
-      }); */
+        // console.error('global:' +String(err))
+
+      });
       return promise;
     }
     return ajax;
@@ -128,34 +130,33 @@ export default class Component {
 }
 
 function dataProcess(data, newObj = [], newName) {
-    function parseName(name,i) {
-      if(!!name) return `${name}[${i}]`;
-      return i;
-    }
+  function parseName(name, i) {
+    return name ? `${name}[${i}]` : i;
+  }
   Object.keys(data).forEach(key => {
     let currentData = data[key];
-    let currentName = parseName(newName,key);
+    let currentName = parseName(newName, key);
     if (bool.isArray(currentData)) {
       currentData.forEach((key2, index) => {
-        //let name = key + `[${index}]`;
+        // let name = key + `[${index}]`;
 
-        let name = parseName(currentName,index);
+        let name = parseName(currentName, index);
         if (bool.isObject(key2)) {
-          return dataProcess(key2,newObj,name)
-        }else {
-          newObj.push(encode(name,key2));
+          return dataProcess(key2, newObj, name);
+        } else {
+          newObj.push(encode(name, key2));
         }
       });
     } else if (bool.isObject(currentData)) {
-      return dataProcess(currentData, newObj, currentName)
+      return dataProcess(currentData, newObj, currentName);
     } else {
       newObj.push(encode(currentName, currentData));
     }
-  })
+  });
   return newObj.join('&');
 }
 
-function encode (key, val) {
+function encode(key, val) {
   return encodeURIComponent(key) + '=' + encodeURIComponent(val);
 }
 
