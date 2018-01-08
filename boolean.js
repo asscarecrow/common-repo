@@ -1,5 +1,7 @@
-
-var hasOwnProperty = Object.prototype.hasOwnProperty
+/*
+布尔类型判断工具
+*/
+var hasOwnProperty = Object.prototype.hasOwnProperty;
 /**
  * Check whether the object has the property.
  *
@@ -7,8 +9,8 @@ var hasOwnProperty = Object.prototype.hasOwnProperty
  * @param {String} key
  * @return {Boolean}
  */
-export function hasOwn (obj, key) {
-  return hasOwnProperty.call(obj, key)
+export function hasOwn(obj, key) {
+  return hasOwnProperty.call(obj, key);
 }
 
 /**
@@ -20,8 +22,8 @@ export function hasOwn (obj, key) {
  * @return {Boolean}
  */
 
-export function isObject (obj) {
-  return obj !== null && typeof obj === 'object'
+export function isObject(obj) {
+  return obj !== null && typeof obj === 'object';
 }
 /**
  * Strict object type check. Only returns true
@@ -31,12 +33,23 @@ export function isObject (obj) {
  * @return {Boolean}
  */
 
-var toString = Object.prototype.toString
-var OBJECT_STRING = '[object Object]'
-export function isPlainObject (obj) {
-  return toString.call(obj) === OBJECT_STRING
+var toString = Object.prototype.toString;
+var OBJECT_STRING = '[object Object]';
+export function isPlainObject(obj) {
+  return toString.call(obj) === OBJECT_STRING;
 }
 
+
+/**
+ * Function type check.
+ *
+ * @param {*} obj
+ * @return {Boolean}
+ */
+
+export function isFunction(obj) {
+  return obj !== null && typeof obj === 'function';
+}
 /**
  * Array type check.
  *
@@ -44,4 +57,4 @@ export function isPlainObject (obj) {
  * @return {Boolean}
  */
 
-export const isArray = Array.isArray
+export const isArray = Array.isArray;
