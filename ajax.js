@@ -31,28 +31,49 @@ dealRes.prototype.catch = (res,reject) => { };
 */
 export default class Component {
   constructor(args) {
-    let defaults = { url: '', data: {}, type: 'POST', fetch: true, dataProcess: null, dealRes: function () { this.then = () => { }; this.catch = () => { }; }, success: null, fail: null, error: null, beforeSend: null, complete: null };
+    let defaults = {
+      url: '',
+      data: {},
+      type: 'POST',
+      fetch: true,
+      catch: true,
+      dataProcess: null,
+      dealRes: function () {
+        this.then = () => {};
+        this.catch = () => {};
+      },
+      success: null,
+      fail: null,
+      error: null,
+      beforeSend: null,
+      complete: null
+    };
     if (bool.isObject(args)) {
       Object.keys(args).forEach(key => {
         defaults[key] = args[key];
       });
     };
+
     function ajax() {
       var opt;
       if (typeof arguments[0] === 'string') {
-        opt = Object.assign({}, defaults, { url: arguments[0] }, arguments[1]);
+        opt = Object.assign({}, defaults, {
+          url: arguments[0]
+        }, arguments[1]);
       } else {
         opt = Object.assign({}, defaults, arguments[0]);
       }
       let timestamp = new Date().getTime();
       let DealRes = opt.dealRes;
       let dealResInstance = new DealRes(opt);
+      dealResInstance.beginTime = Date.now();
       opt.type = String.prototype.toUpperCase.call(opt.type);
       const promise = new Promise((resolve, reject) => {
         if (bool.isFunction(opt.beforeSend)) {
           opt.beforeSend();
         }
-        let url = opt.url.indexOf('?') !== -1 ? opt.url += `&timestamp=${timestamp}` : opt.url += `?timestamp=${timestamp}`;
+        let url = opt.url;
+        // let url = opt.url.indexOf('?') !== -1 ? opt.url += `&timestamp=${timestamp}` : opt.url += `?timestamp=${timestamp}`;
         if (bool.isFunction(opt.dataProcess)) {
           opt.data = opt.dataProcess(opt.data);
         } else {
@@ -69,7 +90,12 @@ export default class Component {
           cache: 'force-cache'
         };
         if (opt.type === 'GET') {
-          url = opt.data !== '' ? url + `&${opt.data}` : url;
+          if (opt.data !== '') {
+            url = url.indexOf('?') !== -1 ? url + `&${opt.data}` : url + `?${opt.data}`;
+          }
+          if (!opt.cache) {
+            url = url.indexOf('?') !== -1 ? url += `&_=${timestamp}` : url += `?_=${timestamp}`;
+          }
         } else {
           Object.defineProperty(requestConfig, 'body', {
             value: opt.data
@@ -91,7 +117,7 @@ export default class Component {
         } else {
           let requestObj;
           if (window.XMLHttpRequest) {
-            requestObj = new XMLHttpRequest();// code for IE7+, Firefox, Chrome, Opera, Safari
+            requestObj = new XMLHttpRequest(); // code for IE7+, Firefox, Chrome, Opera, Safari
           } else {
             requestObj = new ActiveXObject(); // code for IE6, IE5
           }
@@ -102,7 +128,8 @@ export default class Component {
             if (requestObj.readyState === 4) {
               if (requestObj.status === 200) {
                 try {
-                  let resJson = JSON.parse(requestObj.response);
+                  let res = requestObj.response || requestObj.responseText; // responseText only in IE9
+                  let resJson = JSON.parse(res);
                   dealResInstance.then(resJson, resolve, reject);
                 } catch (e) { // 捕获后端异常返回
                   dealResInstance.catch(e, reject);
@@ -115,13 +142,11 @@ export default class Component {
         }
       });
       promise.catch(function (err) {
-
         if (bool.isObject(err)) {
           // console.error('global:' + JSON.stringify(err));
           return false;
         }
         // console.error('global:' +String(err))
-
       });
       return promise;
     }
@@ -159,4 +184,3 @@ function dataProcess(data, newObj = [], newName) {
 function encode(key, val) {
   return encodeURIComponent(key) + '=' + encodeURIComponent(val);
 }
-
