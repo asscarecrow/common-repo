@@ -4,6 +4,7 @@ import * as bool from './boolean';
 使用例子
 let $get = new Component({
   type: 'POST', //请求方式
+  async: true, //是否异步请求
   fetch: true, // 是否启用fetchAPI
   dataProcess: null, // 处理数据，默认处理是encode，无须传入具有默认值
   dealRes: null, // 必须传入一个dealRes处理函数
@@ -31,35 +32,16 @@ dealRes.prototype.catch = (res,reject) => { };
 */
 export default class Component {
   constructor(args) {
-    let defaults = {
-      url: '',
-      data: {},
-      type: 'POST',
-      fetch: true,
-      catch: true,
-      dataProcess: null,
-      dealRes: function () {
-        this.then = () => {};
-        this.catch = () => {};
-      },
-      success: null,
-      fail: null,
-      error: null,
-      beforeSend: null,
-      complete: null
-    };
-    if (bool.isObject(args)) {
+    let defaults = { url: '', data: {}, type: 'POST', async: true, fetch: true, catch: true, dataProcess: null, dealRes: function() { this.then = () => { }; this.catch = () => { }; }, success: null, fail: null, error: null, beforeSend: null, complete: null };
+    if(bool.isObject(args)) {
       Object.keys(args).forEach(key => {
         defaults[key] = args[key];
       });
     };
-
     function ajax() {
       var opt;
       if (typeof arguments[0] === 'string') {
-        opt = Object.assign({}, defaults, {
-          url: arguments[0]
-        }, arguments[1]);
+        opt = Object.assign({}, defaults, { url: arguments[0] }, arguments[1]);
       } else {
         opt = Object.assign({}, defaults, arguments[0]);
       }
@@ -101,15 +83,22 @@ export default class Component {
             value: opt.data
           });
         }
-        if (window.fetch && opt.fetch) {
+        if(opt.async && window.fetch && opt.fetch) {
           fetch(url, requestConfig)
             .then((res) => {
-              if (res.ok) {
-                return res.json();
+              if(res.ok) {
+                // return res;
+                var contentType = res.headers.get('content-type');
+                if(contentType && contentType.includes('application/json')) {
+                  return res.json();
+                }else{
+                  return res.text();
+                }
               }
             })
             .then(resJson => {
-              dealResInstance.then(resJson, resolve, reject);
+              typeof resJson === 'object' ? dealResInstance.then(resJson, resolve, reject)
+              : dealResInstance.catch(resJson, reject);
             })
             .catch(e => {
               dealResInstance.catch(e, reject);
@@ -117,11 +106,11 @@ export default class Component {
         } else {
           let requestObj;
           if (window.XMLHttpRequest) {
-            requestObj = new XMLHttpRequest(); // code for IE7+, Firefox, Chrome, Opera, Safari
+            requestObj = new XMLHttpRequest();// code for IE7+, Firefox, Chrome, Opera, Safari
           } else {
             requestObj = new ActiveXObject(); // code for IE6, IE5
           }
-          requestObj.open(opt.type, opt.url, true);
+          requestObj.open(opt.type, url, true, opt.async);
           requestObj.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
           requestObj.send(opt.data);
           requestObj.onreadystatechange = () => {
@@ -129,13 +118,20 @@ export default class Component {
               if (requestObj.status === 200) {
                 try {
                   let res = requestObj.response || requestObj.responseText; // responseText only in IE9
-                  let resJson = JSON.parse(res);
-                  dealResInstance.then(resJson, resolve, reject);
+                  if(res.charAt(0) === '<') {
+                    // 返回的是一个html
+                    dealResInstance.catch(res, reject);
+                  }else{
+                    let resJson = JSON.parse(res);
+                    dealResInstance.then(resJson, resolve, reject);
+                  }
                 } catch (e) { // 捕获后端异常返回
                   dealResInstance.catch(e, reject);
                 }
-              } else {
-                dealResInstance.catch(requestObj, reject);
+              }else{
+                let msg = `readyState [ ${requestObj.readyState}] is error`;
+                let e = new Error(msg);
+                dealResInstance.catch(e, reject);
               }
             }
           };
