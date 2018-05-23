@@ -110,31 +110,51 @@ export default class Component {
           } else {
             requestObj = new ActiveXObject(); // code for IE6, IE5
           }
-          requestObj.open(opt.type, url, true, opt.async);
+          requestObj.open(opt.type, url, opt.async);
           requestObj.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-          requestObj.send(opt.data);
-          requestObj.onreadystatechange = () => {
-            if (requestObj.readyState === 4) {
-              if (requestObj.status === 200) {
-                try {
-                  let res = requestObj.response || requestObj.responseText; // responseText only in IE9
-                  if(res.charAt(0) === '<') {
-                    // 返回的是一个html
-                    dealResInstance.catch(res, reject);
-                  }else{
-                    let resJson = JSON.parse(res);
-                    dealResInstance.then(resJson, resolve, reject);
-                  }
-                } catch (e) { // 捕获后端异常返回
-                  dealResInstance.catch(e, reject);
+          // requestObj.onreadystatechange = () => {
+          //   if (requestObj.readyState === 4) {
+          //     if (requestObj.status === 200) {
+          //       try {
+          //         let res = requestObj.response || requestObj.responseText; // responseText only in IE9
+          //         if(res.charAt(0) === '<') {
+          //           // 返回的是一个html
+          //           dealResInstance.catch(res, reject);
+          //         }else{
+          //           let resJson = JSON.parse(res);
+          //           dealResInstance.then(resJson, resolve, reject);
+          //         }
+          //       } catch (e) { // 捕获后端异常返回
+          //         dealResInstance.catch(e, reject);
+          //       }
+          //     }else{
+          //       let msg = `readyState [ ${requestObj.readyState}] is error`;
+          //       let e = new Error(msg);
+          //       dealResInstance.catch(e, reject);
+          //     }
+          //   }
+          // };
+          requestObj.onload = function() {
+            if(requestObj.status === 200) {
+              try {
+                let res = requestObj.response || requestObj.responseText; // responseText only in IE9
+                if(res.charAt(0) === '<') {
+                  // 返回的是一个html
+                  dealResInstance.catch(res, reject);
+                }else{
+                  let resJson = JSON.parse(res);
+                  dealResInstance.then(resJson, resolve, reject);
                 }
-              }else{
-                let msg = `readyState [ ${requestObj.readyState}] is error`;
-                let e = new Error(msg);
+              } catch (e) { // 捕获后端异常返回
                 dealResInstance.catch(e, reject);
               }
+            }else{
+              let msg = `readyState [ ${requestObj.readyState}] is error`;
+              let e = new Error(msg);
+              dealResInstance.catch(e, reject);
             }
-          };
+          }
+          requestObj.send(opt.data);          
         }
       });
       promise.catch(function (err) {
