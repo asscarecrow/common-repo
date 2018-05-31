@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    
+    <div class='add '><input class='a'> +<input class="b">= <span class="c"></span> <button class="act">计算  </button></div>
+    <div class='cut '><input class='a'> -<input class="b">= <span class="c"></span> <button class="act">计算  </button></div>
+    <div class='mul '><input class='a'> *<input class="b">= <span class="c"></span> <button class="act">计算  </button></div>
+    <div class='div '><input class='a'> /<input class="b">= <span class="c"></span> <button class="act">计算  </button></div>
+    <script src="https://cdn.bootcss.com/jquery/2.1.3/jquery.js"></script>
+    <script src="./cal2.js"></script>
+    <script>
+    	$(".add").on("click",".act",function(){
+    		var $obj = $(".add");
+    		var a = $obj.find(".a").val();
+    		var b = $obj.find(".b").val();
+    		var $c = $obj.find(".c");
+    		var c = Decimal.add(a,b).toNumber();
+    		$c.html(c);
+    		
+    	});
+    	$(".cut").on("click",".act",function(){
+    		var $obj = $(".cut");
+    		var a = $obj.find(".a").val();
+    		var b = $obj.find(".b").val();
+    		var $c = $obj.find(".c");
+    		var c = Decimal.add(a,-b).toNumber();
+    		$c.html(c);
+    		
+    	})
+    	$(".mul").on("click",".act",function(){
+    		var $obj = $(".mul");
+    		var a = $obj.find(".a").val();
+    		var b = $obj.find(".b").val();
+    		var $c = $obj.find(".c");
+    		var c = Decimal.mul(a,b).toNumber();
+    		$c.html(c);
+    		
+    	})
+    	$(".div").on("click",".act",function(){
+    		var $obj = $(".div");
+    		var a = $obj.find(".a").val();
+    		var b = $obj.find(".b").val();
+    		var $c = $obj.find(".c");
+    		var c = Decimal.div(a,b).toNumber();
+    		$c.html(c);
+    		
+    	})
+    </script>
+</body>
+</html>
