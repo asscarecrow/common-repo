@@ -65,3 +65,10 @@ export function debounce (func, wait) {
     return result
   }
 }
+
+/* 判断是否是某个版本的IE */
+export function isIE(ver){
+  var b = document.createElement('b')
+  b.innerHTML = '<!--[if IE ' + ver + ']><i></i><![endif]-->'
+  return b.getElementsByTagName('i').length === 1
+}
